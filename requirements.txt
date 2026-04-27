@@ -1,0 +1,33 @@
+# requirements.txt — Logi-Agri SN v2+
+# Testé avec Python 3.9 / Java 11 / Spark 3.3
+
+# Core pipeline
+pyspark==3.3.2
+kafka-python==2.0.2
+
+# Validation
+pandera==0.17.2
+pandas==2.0.3
+
+# MLOps
+apache-airflow==2.7.3
+mlflow==2.8.1
+
+# Stockage
+pyhive==0.7.0
+thrift==0.16.0
+happybase==1.2.0
+
+# Optimisation & Analyse
+scipy==1.11.4
+numpy==1.24.4
+matplotlib==3.7.3
+seaborn==0.12.2
+
+# Tests
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Installation :
+# pip install -r requirements.txt
+# Java 11 requis : sudo apt install openjdk-11-jdk
