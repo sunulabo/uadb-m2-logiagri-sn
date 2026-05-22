@@ -1,0 +1,6 @@
+venv_logi/
+__pycache__/
+*.pyc
+.DS_Store
+/tmp/
+models/perte_model_latest/
