@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="inner">
+
+  <!-- ENTETE PAGE -->
+  <div class="phead">
+    <div>
+      <h1>Monitoring Temps Réel</h1>
+      <p>Kafka → Spark Streaming · Mise à jour toutes les 3 secondes · 4 topics actifs</p>
+    </div>
+    <div class="phead-btns">
+      <button class="btn">↓ Export CSV</button>
+      <button class="btn btn-forest">+ Nouveau transport</button>
+    </div>
+  </div>
+
+  <!-- BANNIERE ALERTE -->
+  <div class="alert-banner" id="alert-banner" style="display:none">
+    ⚠ <span id="banner-text"></span>
+    <span class="banner-link">Voir alertes →</span>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="g5">
+
+    <div class="kpi-card kpi-forest">
+      <div class="kpi-top">
+        <div class="kpi-label">VOYAGES ACTIFS</div>
+        <div class="kpi-icon kpi-icon-forest">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val forest" id="kpi-total">--</div>
+      <div class="kpi-sub">En cours ce jour</div>
+      <div class="kpi-bar kpi-bar-forest"></div>
+    </div>
+
+    <div class="kpi-card kpi-crit">
+      <div class="kpi-top">
+        <div class="kpi-label">ALERTES CRITIQUE</div>
+        <div class="kpi-icon kpi-icon-crit">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val crit" id="kpi-critiques">--</div>
+      <div class="kpi-sub">Score risque > 0.40</div>
+      <div class="kpi-bar kpi-bar-crit"></div>
+    </div>
+
+    <div class="kpi-card kpi-amber">
+      <div class="kpi-top">
+        <div class="kpi-label">TAUX PERTE MOY.</div>
+        <div class="kpi-icon kpi-icon-amber">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val amber" id="kpi-perte">--%</div>
+      <div class="kpi-sub">Tous produits</div>
+      <div class="kpi-bar kpi-bar-amber"></div>
+    </div>
+
+    <div class="kpi-card kpi-sky">
+      <div class="kpi-top">
+        <div class="kpi-label">COÛT MOY./TONNE</div>
+        <div class="kpi-icon kpi-icon-sky">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val sky" id="kpi-cout">-- FCFA</div>
+      <div class="kpi-sub">FCFA/tonne</div>
+      <div class="kpi-bar kpi-bar-sky"></div>
+    </div>
+
+    <div class="kpi-card kpi-warn">
+      <div class="kpi-top">
+        <div class="kpi-label">ATTENTION</div>
+        <div class="kpi-icon kpi-icon-warn">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val warn" id="kpi-attention">--</div>
+      <div class="kpi-sub">Score risque > 0.20</div>
+      <div class="kpi-bar kpi-bar-warn"></div>
+    </div>
+
+  </div>
+
+  <!-- TABLEAU + ALERTES -->
+  <div class="g2">
+
+    <!-- TABLEAU TRANSPORTS -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Transports en cours</span>
+        <span class="badge-count" id="badge-total">-- actifs</span>
+      </div>
+      <div class="card-bd" style="padding:0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>VOYAGE</th>
+              <th>PRODUIT</th>
+              <th>ROUTE</th>
+              <th>RISQUE</th>
+              <th>STATUT</th>
+            </tr>
+          </thead>
+          <tbody id="table-transports">
+            <tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--gray-400)">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ALERTES ACTIVES -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Alertes actives — topic logi_alertes</span>
+        <span class="badge-crit" id="badge-crit">-- CRITIQUE</span>
+      </div>
+      <div class="card-bd" style="padding:.75rem;display:flex;flex-direction:column;gap:.5rem" id="liste-alertes">
+        <div style="text-align:center;color:var(--gray-400)">Chargement...</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function chargerDonnees() {
+  fetch('/api/alertes')
+    .then(r => r.json())
+    .then(data => {
+      const k = data.kpis;
+
+      document.getElementById('kpi-total').textContent = k.total;
+      document.getElementById('kpi-critiques').textContent = k.critiques;
+      document.getElementById('kpi-perte').textContent = k.perte_moy + '%';
+      document.getElementById('kpi-cout').textContent = k.cout_moy.toLocaleString() + ' FCFA';
+      document.getElementById('kpi-attention').textContent = k.attention;
+      document.getElementById('badge-total').textContent = k.total + ' actifs';
+      document.getElementById('badge-crit').textContent = k.critiques + ' CRITIQUE';
+
+      if (k.critiques > 0) {
+        document.getElementById('banner-text').textContent =
+          k.critiques + ' alertes CRITIQUE détectées — MANGUE à 40°C détectée !';
+        document.getElementById('alert-banner').style.display = 'flex';
+      } else {
+        document.getElementById('alert-banner').style.display = 'none';
+      }
+
+      const tbody = document.getElementById('table-transports');
+      tbody.innerHTML = '';
+      data.alertes.slice(-10).reverse().forEach(d => {
+        const statut = d.statut_alerte;
+        const cls = statut === 'CRITIQUE' ? 'badge-critique' : statut === 'ATTENTION' ? 'badge-attention' : 'badge-normal';
+        tbody.innerHTML += `
+          <tr>
+            <td class="mono">${d.voyage_id}</td>
+            <td><span class="produit-badge">${d.produit}</span></td>
+            <td>${d.zone_origine} → ${d.zone_dest}</td>
+            <td>
+              <div class="risque-bar">
+                <div class="risque-fill" style="width:${d.risque_perte_score*100}%;background:${statut==='CRITIQUE'?'var(--crit)':statut==='ATTENTION'?'var(--warn)':'var(--ok)'}"></div>
+              </div>
+              <span class="mono">${d.risque_perte_score}</span>
+            </td>
+            <td><span class="${cls}">${statut}</span></td>
+          </tr>`;
+      });
+
+      const liste = document.getElementById('liste-alertes');
+      liste.innerHTML = '';
+      data.alertes.filter(d => d.statut_alerte !== 'NORMAL').slice(-5).reverse().forEach(d => {
+        const isCrit = d.statut_alerte === 'CRITIQUE';
+        liste.innerHTML += `
+          <div class="alerte-item ${isCrit ? 'alerte-crit' : 'alerte-warn'}">
+            <div class="alerte-dot ${isCrit ? 'dot-crit' : 'dot-warn'}"></div>
+            <div>
+              <div class="alerte-title">${d.produit} — ${d.zone_origine}→${d.zone_dest} — ${d.voyage_id}</div>
+              <div class="alerte-desc">Temp: ${d.temp_moyenne_c}°C · Max toléré: ${d.temp_max_tolere}°C · Perte: ${(d.risque_perte_score*100).toFixed(1)}%</div>
+            </div>
+          </div>`;
+      });
+    });
+}
+
+chargerDonnees();
+setInterval(chargerDonnees, 3000);
+</script>
+{% endblock %}

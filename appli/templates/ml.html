@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="inner">
+  <div class="phead">
+    <div>
+      <h1>Modèle ML — Prédiction des pertes</h1>
+      <p>Random Forest · 100 arbres · Entraîné sur historique_transport · Spark MLlib</p>
+    </div>
+    <div class="phead-btns">
+      <button class="btn">↓ Exporter modèle</button>
+      <button class="btn btn-forest">Réentraîner maintenant</button>
+    </div>
+  </div>
+
+  <!-- PIPELINE ML -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-bd">
+      <div style="display:flex;align-items:center;gap:.5rem;overflow-x:auto;padding:.5rem 0">
+        <div class="pipeline-step">
+          <div class="pipeline-icon">⚙</div>
+          <div class="pipeline-name">Kafka Producer</div>
+          <div class="pipeline-sub">kafka-python</div>
+        </div>
+        <div class="pipeline-arrow">›</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">🔄</div>
+          <div class="pipeline-name">Spark Streaming</div>
+          <div class="pipeline-sub">pyspark 3.3</div>
+        </div>
+        <div class="pipeline-arrow">›</div>
+        <div class="pipeline-step active">
+          <div class="pipeline-icon">🌲</div>
+          <div class="pipeline-name">Random Forest</div>
+          <div class="pipeline-sub">MLlib · 100 arbres</div>
+        </div>
+        <div class="pipeline-arrow">›</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📦</div>
+          <div class="pipeline-name">HDFS Model Store</div>
+          <div class="pipeline-sub">perte_model_latest</div>
+        </div>
+        <div class="pipeline-arrow">›</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📊</div>
+          <div class="pipeline-name">Scoring Temps Réel</div>
+          <div class="pipeline-sub">risque_perte_score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 METRIQUES -->
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.75rem;margin-bottom:1.25rem">
+    <div class="kpi-card">
+      <div class="kpi-label">RMSE</div>
+      <div class="kpi-val forest">0.1538</div>
+      <div class="kpi-sub">Root Mean Square Error</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">R²</div>
+      <div class="kpi-val sky">-0.0877</div>
+      <div class="kpi-sub">Coefficient de détermination</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">MAE</div>
+      <div class="kpi-val amber">0.0241</div>
+      <div class="kpi-sub">Mean Absolute Error</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">DÉVIATION ACTUELLE</div>
+      <div class="kpi-val crit">0.067</div>
+      <div class="kpi-sub">⚠ > seuil 0.05 → Réentraînement</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">ÉCHANTILLON TRAIN</div>
+      <div class="kpi-val forest">802</div>
+      <div class="kpi-sub">80% · 90 derniers jours</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">DERNIÈRE MAJ</div>
+      <div class="kpi-val sky" style="font-size:20px">Aujourd'hui</div>
+      <div class="kpi-sub">Airflow DAG</div>
+    </div>
+  </div>
+
+  <!-- VARIABLES + PREDICTIONS -->
+  <div class="g2">
+    
+    <!-- VARIABLES IMPORTANCE -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Importance des variables</span>
+        <span class="sb-badge" style="color:var(--forest)">Random Forest</span>
+      </div>
+      <div class="card-bd">
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">dépassement_temp</span>
+            <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--crit)"></div></div>
+            <span class="bar-val" style="color:var(--crit)">38.2%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">delai_prevu_h</span>
+            <div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--warn)"></div></div>
+            <span class="bar-val" style="color:var(--warn)">27.1%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">produit (indexé)</span>
+            <div class="bar-track"><div class="bar-fill" style="width:45%;background:var(--amber)"></div></div>
+            <span class="bar-val">16.8%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">temp_moyenne_c</span>
+            <div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--sky)"></div></div>
+            <span class="bar-val" style="color:var(--sky)">10.4%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">distance_km</span>
+            <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--forest)"></div></div>
+            <span class="bar-val" style="color:var(--forest)">5.2%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">poids_kg</span>
+            <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--gray-400)"></div></div>
+            <span class="bar-val">2.3%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDICTIONS EN TEMPS REEL -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Prédictions en temps réel</span>
+        <span class="badge-count" id="nb-predictions">-- prédictions</span>
+      </div>
+      <div class="card-bd" style="padding:0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>PRODUIT</th>
+              <th>RÉEL</th>
+              <th>PRÉDIT</th>
+              <th>ÉCART</th>
+            </tr>
+          </thead>
+          <tbody id="table-predictions">
+            <tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DAG AIRFLOW -->
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-title">DAG Airflow — logi_agri_sn_pipeline</span>
+      <span class="badge-count">Schedule : 03h00 quotidien</span>
+    </div>
+    <div class="card-bd">
+      <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+        <div class="dag-step ok">✓ aggregate_transports</div>
+        <div class="dag-arrow">→</div>
+        <div class="dag-step ok">✓ calculate_kpis</div>
+        <div class="dag-arrow">→</div>
+        <div class="dag-step ok">✓ check_deviation</div>
+        <div class="dag-arrow">→</div>
+        <div class="dag-step warn">⚡ retrain_model</div>
+        <div class="dag-arrow">→</div>
+        <div class="dag-step gray">○ skip_retrain</div>
+      </div>
+      <div style="margin-top:.75rem;font-size:12px;color:var(--gray-500)">
+        Réentraîne automatiquement si déviation > 5% · RMSE et R² loggés à chaque run
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function chargerPredictions() {
+  fetch('/api/alertes')
+    .then(r => r.json())
+    .then(data => {
+      const alertes = data.alertes;
+      document.getElementById('nb-predictions').textContent = alertes.length + ' prédictions';
+      
+      const tbody = document.getElementById('table-predictions');
+      tbody.innerHTML = '';
+      alertes.slice(-8).reverse().forEach(d => {
+        if (d.prediction === undefined) return;
+        const reel = (d.risque_perte_score * 100).toFixed(1);
+        const predit = (d.prediction * 100).toFixed(1);
+        const ecart = Math.abs(d.risque_perte_score - d.prediction);
+        const ecartCls = ecart > 0.1 ? 'color:var(--crit)' : 'color:var(--ok)';
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="produit-badge">${d.produit}</span></td>
+            <td class="mono">${reel}%</td>
+            <td class="mono">${predit}%</td>
+            <td class="mono" style="${ecartCls}">${(ecart*100).toFixed(1)}%</td>
+          </tr>`;
+      });
+
+      if (tbody.innerHTML === '') {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">Pas de prédictions ML disponibles</td></tr>';
+      }
+    });
+}
+
+chargerPredictions();
+setInterval(chargerPredictions, 5000);
+</script>
+{% endblock %}

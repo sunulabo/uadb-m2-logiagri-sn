@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block page_title %}KPI Analytiques{% endblock %}
+
+{% block content %}
+<div class="inner">
+
+  <!-- ENTETE -->
+  <div class="phead">
+    <div>
+      <h1>KPI Analytiques</h1>
+      <p>Vues Hive · Données des 30 derniers jours · Actualisation quotidienne à 03h00</p>
+    </div>
+    <div class="phead-btns">
+      <button class="btn">↓ Rapport PDF</button>
+      <button class="btn btn-forest">Lancer Airflow DAG</button>
+    </div>
+  </div>
+
+  <!-- 4 CARDS -->
+  <div class="g4">
+    <div class="kpi-card kpi-forest">
+      <div class="kpi-top">
+        <div class="kpi-label">TONNAGE TOTAL</div>
+        <div class="kpi-icon kpi-icon-forest">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val forest" id="kpi-tonnage">--</div>
+      <div class="kpi-sub" id="kpi-tonnage-sub">Sur 30 jours · 4 produits</div>
+      <div class="kpi-bar kpi-bar-forest"></div>
+    </div>
+
+    <div class="kpi-card kpi-crit">
+      <div class="kpi-top">
+        <div class="kpi-label">PERTES ESTIMÉES</div>
+        <div class="kpi-icon kpi-icon-crit">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val crit" id="kpi-pertes">--</div>
+      <div class="kpi-sub" id="kpi-pertes-sub">-- du tonnage</div>
+      <div class="kpi-bar kpi-bar-crit"></div>
+    </div>
+
+    <div class="kpi-card kpi-sky">
+      <div class="kpi-top">
+        <div class="kpi-label">COÛT LOGISTIQUE</div>
+        <div class="kpi-icon kpi-icon-sky">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val sky" id="kpi-cout">--</div>
+      <div class="kpi-sub">FCFA · dont pertes</div>
+      <div class="kpi-bar kpi-bar-sky"></div>
+    </div>
+
+    <div class="kpi-card kpi-amber">
+      <div class="kpi-top">
+        <div class="kpi-label">VOYAGES TERMINÉS</div>
+        <div class="kpi-icon kpi-icon-amber">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+      </div>
+      <div class="kpi-val amber" id="kpi-termines">--</div>
+      <div class="kpi-sub" id="kpi-termines-sub">-- dans les délais</div>
+      <div class="kpi-bar kpi-bar-amber"></div>
+    </div>
+  </div>
+
+  <!-- BARRES + GOULOTS -->
+  <div class="g2">
+
+    <!-- BARRES -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Taux de perte par produit</span>
+        <span class="badge-count">30 jours</span>
+      </div>
+      <div class="card-bd">
+
+        <div style="margin-bottom:1.25rem">
+          <div class="bar-section-label">TAUX DE PERTE PAR PRODUIT</div>
+          <div id="barres-produit"></div>
+        </div>
+
+        <div>
+          <div class="bar-section-label">COÛT MOYEN / TONNE (FCFA)</div>
+          <div id="barres-zone"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GOULOTS -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Goulots d'entrepôts — vue_goulots_entrepots</span>
+        <span class="badge-count">Aujourd'hui</span>
+      </div>
+      <div class="card-bd" style="padding:0">
+        <table class="data-table" id="table-goulots">
+          <thead>
+            <tr>
+              <th></th>
+              <th>DAKAR</th>
+              <th>EXPORT</th>
+              <th>THIES</th>
+              <th>KAOLACK</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-goulots"></tbody>
+        </table>
+        <div style="padding:.75rem 1rem;display:flex;gap:.5rem;align-items:center;font-size:11px;color:var(--gray-500)">
+          Légende :
+          <span class="badge-normal">NORMAL</span>
+          <span class="badge-attention">ATTENTION</span>
+          <span class="badge-modere">MODÉRÉ</span>
+          <span class="badge-critique">CRITIQUE</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function chargerKPI() {
+  fetch('/api/kpis')
+    .then(r => r.json())
+    .then(data => {
+      const c = data.cards;
+
+      document.getElementById('kpi-tonnage').textContent = c.tonnage + 't';
+      document.getElementById('kpi-pertes').textContent = c.pertes + 't';
+      document.getElementById('kpi-pertes-sub').textContent = c.perte_pct + '% du tonnage';
+      document.getElementById('kpi-cout').textContent = c.cout_total + 'M FCFA';
+      document.getElementById('kpi-termines').textContent = c.termines.toLocaleString();
+      document.getElementById('kpi-termines-sub').textContent = c.termines_pct + '% dans les délais';
+
+      // Barres produits
+      const couleurs = { TOMATE: 'var(--crit)', MANGUE: 'var(--terracotta)', ARACHIDE: 'var(--amber)', RIZ: 'var(--forest)' };
+      const maxPerte = Math.max(...Object.values(data.perte_par_produit));
+      let htmlProduit = '';
+      Object.entries(data.perte_par_produit).sort((a,b) => b[1]-a[1]).forEach(([p, v]) => {
+        htmlProduit += `
+          <div class="barre-row">
+            <div class="barre-label">${p}</div>
+            <div class="barre-track">
+              <div class="barre-fill" style="width:${maxPerte > 0 ? v/maxPerte*100 : 0}%;background:${couleurs[p]||'var(--gray-400)'}"></div>
+            </div>
+            <div class="barre-val">${v}%</div>
+          </div>`;
+      });
+      document.getElementById('barres-produit').innerHTML = htmlProduit;
+
+      // Barres zones
+      const maxCout = Math.max(...Object.values(data.cout_par_zone));
+      let htmlZone = '';
+      Object.entries(data.cout_par_zone).sort((a,b) => b[1]-a[1]).forEach(([z, v]) => {
+        htmlZone += `
+          <div class="barre-row">
+            <div class="barre-label">${z.replace('_', ' ')}</div>
+            <div class="barre-track">
+              <div class="barre-fill" style="width:${maxCout > 0 ? v/maxCout*100 : 0}%;background:var(--sky)"></div>
+            </div>
+            <div class="barre-val">${v.toLocaleString()}</div>
+          </div>`;
+      });
+      document.getElementById('barres-zone').innerHTML = htmlZone;
+
+      // Goulots
+      const produits = ['MANGUE', 'TOMATE', 'ARACHIDE', 'RIZ'];
+      const destinations = ['DAKAR', 'EXPORT', 'THIES', 'KAOLACK'];
+      let htmlGoulots = '';
+      produits.forEach(p => {
+        htmlGoulots += `<tr><td><strong>${p}</strong></td>`;
+        destinations.forEach(dest => {
+          const statut = data.goulots[p]?.[dest] || 'NORMAL';
+          const cls = statut === 'CRITIQUE' ? 'badge-critique' : statut === 'MODÉRÉ' ? 'badge-modere' : statut === 'ATTENTION' ? 'badge-attention' : 'badge-normal';
+          htmlGoulots += `<td><span class="${cls}">${statut}</span></td>`;
+        });
+        htmlGoulots += '</tr>';
+      });
+      document.getElementById('tbody-goulots').innerHTML = htmlGoulots;
+    });
+}
+
+chargerKPI();
+setInterval(chargerKPI, 5000);
+</script>
+{% endblock %}
