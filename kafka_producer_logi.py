@@ -40,7 +40,7 @@ def gen_transport() -> dict:
     dest = random.choice(ZONES_DEST)
     dist = DISTANCES.get((orig,dest), random.randint(80,600))
     delai = max(1, int(dist / random.uniform(40,80)))
-    temp = round(random.uniform(18, 40), 1)
+    temp = 40.0 if produit == 'MANGUE' else round(random.uniform(18, 40), 1)
     perte = compute_pct_perte(produit, temp, delai)
     return {
         'raw_entity_id': f'T_{uuid.uuid4().hex[:8].upper()}',
