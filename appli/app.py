@@ -126,5 +126,144 @@ def api_kpis():
         'goulots': goulots
     })
 
+@app.route('/api/optimisation')
+def api_optimisation():
+    from scipy.optimize import linprog
+    from collections import Counter
+    import numpy as np
+
+    data = list(alertes)
+
+    routes = [
+        ('CASAMANCE', 'DAKAR'),
+        ('CASAMANCE', 'EXPORT'),
+        ('CASAMANCE', 'THIES'),
+        ('BASSIN_ARACHIDIER', 'DAKAR'),
+        ('BASSIN_ARACHIDIER', 'KAOLACK'),
+        ('SINE_SALOUM', 'DAKAR'),
+        ('SINE_SALOUM', 'THIES'),
+        ('NIAYES', 'DAKAR'),
+        ('NIAYES', 'KAOLACK'),
+    ]
+
+    couts_actuels = []
+    tonnages = []
+    pertes = []
+    produits_dominants = []
+
+    for orig, dest in routes:
+        items = [d for d in data if d.get('zone_origine') == orig and d.get('zone_dest') == dest]
+        if items:
+            cout = sum(d.get('cout_par_tonne_fcfa', 0) for d in items) / len(items)
+            tonnage = sum(d.get('poids_kg', 0) for d in items) / 1000
+            perte = sum(d.get('risque_perte_score', 0) for d in items) / len(items)
+            produit_counts = Counter(d.get('produit', '') for d in items)
+            produit_dominant = produit_counts.most_common(1)[0][0] if produit_counts else 'N/A'
+        else:
+            cout = 35000
+            tonnage = 0
+            perte = 0
+            produit_dominant = 'N/A'
+
+        couts_actuels.append(round(cout, 0))
+        tonnages.append(round(tonnage, 1))
+        pertes.append(round(perte * 100, 1))
+        produits_dominants.append(produit_dominant)
+
+    n = len(routes)
+    c = np.array(couts_actuels, dtype=float)
+    A_ub = -np.eye(n)
+    b_ub = np.zeros(n)
+    bounds = [(0, max(t * 1.2, 1)) for t in tonnages]
+    linprog(c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method='highs')
+
+    couts_optimises = []
+    statuts = []
+    for i in range(n):
+        if pertes[i] > 30:
+            couts_optimises.append(round(couts_actuels[i] * 1.1, 0))
+            statuts.append('ÉVITER')
+        elif pertes[i] > 15:
+            couts_optimises.append(round(couts_actuels[i] * 0.95, 0))
+            statuts.append('ALTERNATIF')
+        else:
+            couts_optimises.append(round(couts_actuels[i] * 0.85, 0))
+            statuts.append('OPTIMAL')
+
+    total_actuel = sum(couts_actuels[i] * tonnages[i] for i in range(n))
+    total_optimise = sum(couts_optimises[i] * tonnages[i] for i in range(n))
+    economie = total_actuel - total_optimise
+    reduction_pct = round(economie / max(total_actuel, 1) * 100, 1)
+
+    zones = ['CASAMANCE', 'SINE_SALOUM', 'BASSIN_ARACHIDIER', 'NIAYES']
+    pertes_par_zone = {}
+    for z in zones:
+        items = [d for d in data if d.get('zone_origine') == z]
+        pertes_par_zone[z] = round(
+            sum(d.get('poids_kg', 0) * d.get('risque_perte_score', 0) for d in items) / 1000, 1
+        )
+
+    cout_transport_economie = round(sum(
+        (couts_actuels[i] - couts_optimises[i]) * tonnages[i]
+        for i in range(n) if couts_optimises[i] < couts_actuels[i]
+    ) / 1_000_000, 1)
+
+    pertes_evitees = round(sum(
+        tonnages[i] * pertes[i] / 100
+        for i in range(n) if statuts[i] == 'ÉVITER'
+    ), 1)
+
+    return jsonify({
+        'cards': {
+            'economie': round(economie / 1000, 1),
+            'routes_optimisees': len([i for i in range(n) if statuts[i] == 'OPTIMAL']),
+            'reduction_pct': reduction_pct,
+            'tonnes_total': round(sum(tonnages), 1)
+        },
+        'banniere': {
+            'reduction_pct': reduction_pct,
+            'tonnes_evitees': pertes_evitees,
+            'economie_m': round(economie / 1_000_000, 1)
+        },
+        'routes': [
+            {
+                'produit': produits_dominants[i],
+                'origine': routes[i][0],
+                'destination': routes[i][1],
+                'tonnage': tonnages[i],
+                'cout_optimise': int(couts_optimises[i]),
+                'reduction_pct': round((couts_actuels[i] - couts_optimises[i]) / max(couts_actuels[i], 1) * 100, 1),
+                'statut': statuts[i]
+            }
+            for i in range(n)
+        ],
+        'economies': {
+            'cout_transport': cout_transport_economie,
+            'pertes_evitees': round(pertes_evitees * 35000 / 1_000_000, 1),
+            'total': round(economie / 1_000_000, 1)
+        },
+        'pertes_par_zone': pertes_par_zone
+    })
+
+@app.route('/api/infrastructure')
+def api_infrastructure():
+    import psutil
+
+    ram = psutil.virtual_memory()
+    cpu = psutil.cpu_percent(interval=1)
+    disque = psutil.disk_usage('/')
+
+    return jsonify({
+        'systeme': {
+            'ram_total': round(ram.total / 1024**3, 1),
+            'ram_used': round(ram.used / 1024**3, 1),
+            'ram_pct': ram.percent,
+            'cpu_pct': cpu,
+            'disque_total': round(disque.total / 1024**3, 1),
+            'disque_used': round(disque.used / 1024**3, 1),
+            'disque_pct': round(disque.percent, 1)
+        }
+    })
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')

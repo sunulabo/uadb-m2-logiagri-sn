@@ -1,6 +1,176 @@
 {% extends "base.html" %}
+
+{% block page_title %}Optimisation{% endblock %}
+
 {% block content %}
 <div class="inner">
-  <h1>Optimisation</h1>
+
+  <!-- ENTETE -->
+  <div class="phead">
+    <div>
+      <h1>Optimisation Logistique</h1>
+      <p>SciPy linprog · Programmation linéaire · Réduction des coûts et des pertes</p>
+    </div>
+    <div class="phead-btns">
+      <button class="btn">↓ Rapport complet</button>
+      <button class="btn btn-forest" onclick="chargerOptimisation()">Recalculer plan</button>
+    </div>
+  </div>
+
+  <!-- BANNIERE RESULTAT LINPROG -->
+  <div class="optim-banner" id="optim-banner">
+    <div class="optim-banner-icon">✓</div>
+    <div class="optim-banner-text">
+      <strong>Plan optimal calculé — scipy.linprog</strong>
+      <div id="banner-desc">Chargement...</div>
+    </div>
+    <div class="optim-banner-pct" id="banner-pct">--%</div>
+    <div class="optim-banner-label">réduction coût logistique</div>
+  </div>
+
+  <!-- TABLEAU + ECONOMIES -->
+  <div class="g2-optim">
+
+    <!-- TABLEAU ROUTES -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Plan de transport optimal — Routes recommandées</span>
+        <span class="badge-count">linprog actif</span>
+      </div>
+      <div class="card-bd" style="padding:0;overflow-x:auto">
+        <table class="data-table" style="min-width:600px">
+          <thead>
+            <tr>
+              <th>PRODUIT</th>
+              <th>ORIGINE</th>
+              <th>DESTINATION</th>
+              <th>TONNAGE</th>
+              <th>COÛT OPT./T</th>
+              <th>RÉDUCTION</th>
+              <th>STATUT</th>
+            </tr>
+          </thead>
+          <tbody id="table-routes">
+            <tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--gray-400)">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ECONOMIES + DONUT -->
+    <div style="display:flex;flex-direction:column;gap:1rem">
+
+      <!-- ECONOMIES -->
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">Économies estimées</span>
+        </div>
+        <div class="card-bd">
+          <div class="economie-row forest">
+            <span>Coûts transport</span>
+            <span id="eco-transport">-- M FCFA</span>
+          </div>
+          <div class="economie-row crit">
+            <span>Pertes évitées</span>
+            <span id="eco-pertes">-- M FCFA</span>
+          </div>
+          <div class="economie-total">
+            <span>Total économisé</span>
+            <span id="eco-total">-- M FCFA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DONUT PERTES PAR ZONE -->
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">Pertes par région</span>
+        </div>
+        <div class="card-bd" style="display:flex;align-items:center;gap:1rem">
+          <canvas id="donutZones" style="max-width:140px;max-height:140px"></canvas>
+          <div id="legende-donut" style="flex:1;display:flex;flex-direction:column;gap:.4rem"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+let donutChart = null;
+
+function chargerOptimisation() {
+  fetch('/api/optimisation')
+    .then(r => r.json())
+    .then(data => {
+
+      const b = data.banniere;
+      document.getElementById('banner-pct').textContent = (b.reduction_pct > 0 ? '-' : '+') + Math.abs(b.reduction_pct) + '%';
+      document.getElementById('banner-desc').textContent =
+        `Réorganisation des routes → réduction du coût logistique total de ${Math.abs(b.reduction_pct)}% · Pertes potentielles évitées : ${b.tonnes_evitees} tonnes · Économie estimée : ${b.economie_m}M FCFA`;
+
+      const tbody = document.getElementById('table-routes');
+      tbody.innerHTML = '';
+      data.routes.forEach(r => {
+        const statutCls = r.statut === 'OPTIMAL' ? 'badge-normal' : r.statut === 'ÉVITER' ? 'badge-critique' : 'badge-attention';
+        const reductionCls = r.reduction_pct > 0 ? 'color:var(--ok)' : 'color:var(--crit)';
+        const produitCls = 'produit-' + r.produit.toLowerCase();
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="produit-badge ${produitCls}">${r.produit}</span></td>
+            <td>${r.origine.replace(/_/g, ' ')}</td>
+            <td>${r.destination}</td>
+            <td class="mono">${r.tonnage}t</td>
+            <td class="mono">${r.cout_optimise.toLocaleString()} FCFA</td>
+            <td class="mono" style="${reductionCls}">${r.reduction_pct > 0 ? '-' : '+'}${Math.abs(r.reduction_pct)}%</td>
+            <td><span class="${statutCls}">${r.statut}</span></td>
+          </tr>`;
+      });
+
+      const e = data.economies;
+      document.getElementById('eco-transport').textContent = '-' + e.cout_transport + 'M FCFA';
+      document.getElementById('eco-pertes').textContent = '-' + e.pertes_evitees + 'M FCFA';
+      document.getElementById('eco-total').textContent = e.total + 'M FCFA';
+
+      const zones = Object.keys(data.pertes_par_zone);
+      const vals = Object.values(data.pertes_par_zone);
+      const couleurs = ['#b91c1c', '#b45309', '#0d5c3a', '#1a5fb4'];
+
+      if (donutChart) donutChart.destroy();
+      donutChart = new Chart(document.getElementById('donutZones'), {
+        type: 'doughnut',
+        data: {
+          labels: zones,
+          datasets: [{
+            data: vals,
+            backgroundColor: couleurs,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: '65%',
+          animation: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      const legende = document.getElementById('legende-donut');
+      legende.innerHTML = '';
+      zones.forEach((z, i) => {
+        legende.innerHTML += `
+          <div style="display:flex;align-items:center;gap:.5rem;font-size:11.5px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${couleurs[i]};flex-shrink:0"></div>
+            <span style="color:var(--gray-600)">${z.replace(/_/g, ' ')}</span>
+            <span style="margin-left:auto;font-weight:700;font-family:'JetBrains Mono',monospace">${vals[i]}t</span>
+          </div>`;
+      });
+    });
+}
+
+chargerOptimisation();
+setInterval(chargerOptimisation, 10000);
+</script>
 {% endblock %}

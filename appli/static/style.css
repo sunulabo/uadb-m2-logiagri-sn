@@ -502,3 +502,144 @@ body{
 .bar-val { width: 45px; font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-align: right; }
 
 
+/* ── INFRASTRUCTURE ── */
+.infra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .875rem;
+}
+.infra-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.infra-card-highlight {
+  background: var(--forest-light);
+  border-color: var(--forest-border);
+}
+.infra-card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.infra-nom {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.infra-port {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.infra-url {
+  font-size: 11.5px;
+  color: var(--sky);
+}
+.infra-desc {
+  font-size: 11.5px;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+.infra-stat {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ok);
+  margin-top: .25rem;
+}
+.infra-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-ok { background: var(--ok); }
+.dot-down { background: var(--crit); }
+
+/* ── OPTIMISATION ── */
+.optim-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--forest-light);
+  border: 1px solid var(--forest-border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.optim-banner-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.optim-banner-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--forest);
+}
+.optim-banner-text strong { font-size: 13.5px; }
+.optim-banner-text div { font-size: 11.5px; margin-top: 3px; color: var(--gray-600); }
+.optim-banner-pct {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--forest);
+}
+.optim-banner-label {
+  font-size: 11px;
+  color: var(--gray-500);
+  max-width: 80px;
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* ECONOMIES */
+.economie-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .6rem 0;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 13px;
+}
+.economie-row.forest span:last-child { color: var(--forest); font-weight: 700; }
+.economie-row.crit span:last-child { color: var(--crit); font-weight: 700; }
+.economie-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .75rem 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.g2-optim {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.produit-mangue { background: rgba(192,66,12,0.12); color: #c0420c; }
+.produit-tomate { background: rgba(185,28,28,0.12); color: #b91c1c; }
+.produit-arachide { background: rgba(146,102,10,0.12); color: #92660a; }
+.produit-riz { background: rgba(13,92,58,0.12); color: #0d5c3a; }
