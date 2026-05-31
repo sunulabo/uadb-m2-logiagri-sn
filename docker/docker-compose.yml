@@ -19,7 +19,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -27,10 +27,10 @@ services:
       - logi_net
 
   nifi:
-    image: apache/nifi:1.25.0  # FIX: tag spécifique au lieu de latest
+    image: apache/nifi:1.25.0
     container_name: nifi
     ports:
-      - "8081:8080"  # FIX: changé de 8443 à 8081 (conflit avec spark)
+      - "8081:8080"
     environment:
       NIFI_WEB_HTTP_PORT: 8080
     networks:
@@ -41,12 +41,12 @@ services:
     container_name: hbase
     ports:
       - "16010:16010"
-      - "19090:9090"  # FIX: changé de 9090 à 19090 (conflit avec prometheus/autres services)
+      - "19090:9090"
     networks:
       - logi_net
 
   hive-metastore:
-    image: apache/hive:4.0.0  # FIX: 3.1.3 n'existe pas, remplacé par 4.0.0
+    image: apache/hive:4.0.0
     container_name: hive-metastore
     ports:
       - "9083:9083"
@@ -56,7 +56,7 @@ services:
       - logi_net
 
   hiveserver2:
-    image: apache/hive:4.0.0  # FIX: aligné avec hive-metastore
+    image: apache/hive:4.0.0
     container_name: hiveserver2
     depends_on:
       - hive-metastore
@@ -69,7 +69,7 @@ services:
       - logi_net
 
   spark-master:
-    image: apache/spark:4.0.2-scala2.13-java17-python3-r-ubuntu  # FIX: tag spécifique au lieu de latest
+    image: apache/spark:4.0.2-scala2.13-java17-python3-r-ubuntu
     container_name: spark-master
     ports:
       - "8080:8080"
@@ -80,7 +80,7 @@ services:
       - logi_net
 
   spark-worker:
-    image: apache/spark:4.0.2-scala2.13-java17-python3-r-ubuntu  # FIX: aligné avec spark-master
+    image: apache/spark:4.0.2-scala2.13-java17-python3-r-ubuntu
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -106,8 +106,27 @@ services:
     networks:
       - logi_net
 
- 
- 
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - logi_net
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+    networks:
+      - logi_net
 
 networks:
   logi_net:

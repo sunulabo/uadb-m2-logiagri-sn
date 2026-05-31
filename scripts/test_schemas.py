@@ -27,7 +27,7 @@ from schema import (
     get_schema_stats,
     SALT,
 )
-from kafka_producer_logi import compute_pct_perte, gen_transport, gen_capteur
+from src.kafka_producer_logi import compute_pct_perte, gen_transport, gen_capteur
 
 
 # ══════════════════════════════════════════════════════════════════════════
