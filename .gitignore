@@ -1,6 +1,32 @@
+# Environnements Python locaux
 venv_logi/
-tmp_pip_download/
-tmp_pip_download_341/
+venv/
+.venv/
+env/
+
+# Caches Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Telechargements et archives
+tmp_pip_download*/
 *.tar.gz
 *.zip
 *.tgz
+
+# Fichiers systeme
+.DS_Store
+Thumbs.db
+
+# Logs et fichiers generes au runtime
+logs/
+docker/logs/
+*.log
+
+# Marqueurs Spark/Hadoop generes
+*.crc
+_SUCCESS
+

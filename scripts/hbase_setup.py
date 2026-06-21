@@ -25,7 +25,7 @@ def create_logi_agri_tables():
     while retry_count < max_retries:
         try:
             logger.info(f'Tentative de connexion à HBase (tentative {retry_count+1}/{max_retries})...')
-            conn = happybase.Connection('hbase', port=16010, timeout=10000)
+            conn = happybase.Connection('hbase', port=9091, timeout=10000)
             conn.open()
             logger.info('✓ Connexion à HBase établie')
             break

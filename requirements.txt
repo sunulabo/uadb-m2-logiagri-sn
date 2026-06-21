@@ -1,23 +1,27 @@
 # Core pipeline
 pyspark==3.3.2
-kafka-python==2.0.2
+py4j==0.10.9.5
+kafka-python==2.3.1
 
 # Validation
 #pandera==0.17.2
-pandas==2.0.3
+pandas==2.2.2
 
 # MLOps
-apache-airflow==2.7.3
-mlflow==2.8.1
+apache-airflow==3.0.6
+mlflow==2.14.0
+SQLAlchemy==1.4.54
+protobuf==4.25.9
+opentelemetry-api==1.27.0
 
 # Stockage
-pyhive==0.7.0
+PyHive==0.7.0
 thrift==0.16.0
 happybase==1.2.0
 
 # Optimisation & Analyse
-scipy==1.11.4
-numpy==1.24.4
-matplotlib==3.7.3
+scipy==1.17.1
+numpy==1.26.4
+matplotlib==3.10.9
 seaborn==0.12.2
 
