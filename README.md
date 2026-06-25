@@ -1,5 +1,6 @@
 # uadb-m2-logiagri-sn
-Logistique Agricole &amp; IoT Streaming — Master 2 Big Data UADB 2025-2026
+Logistique Agricole &amp; IoT Streaming — Master 2 Big Data UADB 2025-2026- EQUIPE 03
+CHEIKH AHMADOU KA & ABDOU ZATADINI 
 # 🚀 Logi-Agri SN — Docker Infrastructure Setup
 
 ## ✅ Prérequis installés

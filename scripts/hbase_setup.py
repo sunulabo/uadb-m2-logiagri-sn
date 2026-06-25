@@ -1,29 +1,17 @@
-#!/usr/bin/env python3
 # hbase_setup.py — Création des tables HBase pour Logi-Agri SN
-# À exécuter UNE SEULE FOIS après docker compose up
-
 import happybase
 import logging
 import time
-import sys
+import socket
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('HBaseSetup')
 
-def create_logi_agri_tables():
-    """
-    Crée les 3 tables HBase nécessaires :
-    - logi:transports : flux temps réel des transports
-    - logi:alertes : alertes de pertes imminentes
-    - logi:stocks : stocks en entrepôt
-    """
-    
-    # Paramètres de connexion
-    max_retries = 5
-    retry_count = 0
-    
-    while retry_count < max_retries:
+
+def wait_for_thrift(host='localhost', port=9090, retries=10, delay=5):
+    """Attendre que le serveur Thrift HBase soit prêt."""
+    for i in range(retries):
         try:
+<<<<<<< HEAD
             logger.info(f'Tentative de connexion à HBase (tentative {retry_count+1}/{max_retries})...')
             conn = happybase.Connection('hbase', port=9091, timeout=10000)
             conn.open()
@@ -59,30 +47,78 @@ def create_logi_agri_tables():
         },
     }
     
+=======
+            sock = socket.create_connection((host, port), timeout=3)
+            sock.close()
+            logger.info(f'Thrift server disponible sur {host}:{port}')
+            return True
+        except (socket.error, ConnectionRefusedError):
+            logger.warning(f'Tentative {i+1}/{retries} — Thrift pas encore prêt, attente {delay}s...')
+            time.sleep(delay)
+    return False
+
+
+def create_logi_agri_tables():
+    # 1. Vérifier que le Thrift server est prêt
+    if not wait_for_thrift():
+        raise RuntimeError("Impossible de joindre HBase Thrift server sur localhost:9090")
+
+    # 2. Connexion happybase (Thrift 1 uniquement, pas de namespace API)
+    conn = happybase.Connection(
+        host='localhost',
+        port=9090,
+        timeout=30000,        # 30s timeout
+        transport='framed',  # 'buffered' ou 'framed' selon la config HBase
+        protocol='binary',
+    )
+
+>>>>>>> 8c2cc91f (final:infrastructure fonctionnel)
     try:
-        # Récupérer les tables existantes
-        existantes = [t.decode() for t in conn.tables()]
-        logger.info(f'Tables existantes : {existantes}')
-        
-        # Créer les tables manquantes
+        conn.open()
+        logger.info("Connexion HBase établie")
+
+        # ⚠️  Les namespaces doivent être créés via HBase Shell au préalable :
+        #     docker exec -it hbase hbase shell -e "create_namespace 'logi'"
+        # 
+        # Note : happybase/Thrift1 ne supporte pas createNamespace()
+
+        tables_a_creer = {
+            b'logi:transports': {
+                b'meta':     dict(max_versions=1),
+                b'kpi':      dict(max_versions=5),
+                b'position': dict(max_versions=10),
+            },
+            b'logi:alertes': {
+                b'alerte': dict(max_versions=1, time_to_live=172800),
+            },
+            b'logi:stocks': {
+                b'inventaire':  dict(max_versions=5),
+                b'conditions':  dict(max_versions=10),
+            },
+        }
+
+        existantes = {t.decode() for t in conn.tables()}
+        logger.info(f"Tables existantes : {existantes or '(aucune)'}")
+
         for nom_bytes, families in tables_a_creer.items():
             nom = nom_bytes.decode()
             if nom in existantes:
-                logger.info(f'  ⚠ Table {nom} déjà existante (skipped)')
+                logger.info(f'  [SKIP] Table {nom} déjà existante')
             else:
                 conn.create_table(nom_bytes, families)
-                logger.info(f'  ✓ Table {nom} créée')
-        
-        conn.close()
-        logger.info('✓ Initialisation HBase réussie')
-        return True
-        
+                logger.info(f'  [OK]   Table {nom} créée')
+
     except Exception as e:
-        logger.error(f'Erreur lors de la création des tables : {e}')
+        logger.error(f"Erreur lors de la création des tables : {e}")
+        raise
+    finally:
         conn.close()
-        return False
+        logger.info("Connexion fermée")
 
 
 if __name__ == '__main__':
-    success = create_logi_agri_tables()
-    sys.exit(0 if success else 1)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s — %(message)s'
+    )
+    create_logi_agri_tables()

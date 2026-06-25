@@ -16,7 +16,7 @@ from pyspark.sql.types import StructType, StructField, StringType, FloatType, In
 
 # Configuration
 SALT = os.environ.get('LOGI_SECRET_SALT', 'logi_agri_sn_2025_uadb_secret')
-BROKERS = 'localhost:9092'
+BROKERS = os.environ.get('KAFKA_BROKERS', 'localhost:29092')
 
 # Initialiser Spark Session
 spark = SparkSession.builder \

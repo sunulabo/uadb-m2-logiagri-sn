@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1782140834978,"sparkVersion":"4.1.2","uid":"VectorAssembler_32095eef8fdc","paramMap":{"inputCols":["temp_moyenne_c","depassement_temp","delai_prevu_h","distance_km","poids_kg","produit_idx"],"outputCol":"features_raw"},"defaultParamMap":{"handleInvalid":"error","outputCol":"VectorAssembler_32095eef8fdc__output"}}

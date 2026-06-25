@@ -54,7 +54,7 @@ DISTANCES = {
 # Initialiser le producteur Kafka
 try:
     producer = KafkaProducer(
-        bootstrap_servers=['localhost:9092'],
+        bootstrap_servers=['localhost:29092'],
         value_serializer=lambda v: json.dumps(v).encode('utf-8'),
         acks='all',
         retries=3
