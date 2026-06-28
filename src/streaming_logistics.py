@@ -6,6 +6,8 @@
 # 3. Division par zéro protégée
 
 import os
+from pathlib import Path
+import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, sha2, concat, lit, from_json, to_json, struct,
@@ -18,11 +20,32 @@ from pyspark.sql.types import StructType, StructField, StringType, FloatType, In
 SALT = os.environ.get('LOGI_SECRET_SALT', 'logi_agri_sn_2025_uadb_secret')
 BROKERS = os.environ.get('KAFKA_BROKERS', 'localhost:29092')
 
+
+def detect_spark_kafka_package() -> str:
+    package = os.environ.get('SPARK_KAFKA_PACKAGE')
+    if package:
+        return package
+
+    spark_version = pyspark.__version__
+    jars_dir = Path(pyspark.__file__).resolve().parent / 'jars'
+    spark_core_jars = list(jars_dir.glob('spark-core_*-*.jar'))
+    scala_version = '2.13'
+
+    if spark_core_jars:
+        jar_name = spark_core_jars[0].name
+        scala_version = jar_name.split('_', 1)[1].split('-', 1)[0]
+
+    return f'org.apache.spark:spark-sql-kafka-0-10_{scala_version}:{spark_version}'
+
+
+SPARK_KAFKA_PACKAGE = detect_spark_kafka_package()
+print(f'[Spark] Package Kafka utilise: {SPARK_KAFKA_PACKAGE}')
+
 # Initialiser Spark Session
 spark = SparkSession.builder \
     .appName('LogiAgri_SN_Streaming') \
     .config('spark.sql.shuffle.partitions', '4') \
-    .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0') \
+    .config('spark.jars.packages', SPARK_KAFKA_PACKAGE) \
     .config('spark.driver.memory', '2g') \
     .config('spark.executor.memory', '2g') \
     .getOrCreate()

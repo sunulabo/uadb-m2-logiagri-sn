@@ -71,11 +71,6 @@ services:
     container_name: spark-worker
     depends_on:
       - spark-master
-<<<<<<< HEAD
-    ports:
-      - "8083:8081"
-=======
->>>>>>> 8c2cc91f (final:infrastructure fonctionnel)
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
 
   airflow:
@@ -100,14 +95,37 @@ services:
       POSTGRES_DB: logiagri_db
     ports:
       - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../scripts/init_grafana_db.sql:/docker-entrypoint-initdb.d/01-init-grafana-db.sql:ro
+
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
 
   grafana:
     image: grafana/grafana:10.2.0
     container_name: grafana
     depends_on:
       - postgres
+      - prometheus
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: logiagri2025
+      GF_USERS_DEFAULT_THEME: light
     ports:
       - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

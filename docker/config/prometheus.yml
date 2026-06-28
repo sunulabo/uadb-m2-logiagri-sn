@@ -7,16 +7,4 @@ global:
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9091']
-
-  - job_name: 'kafka'
-    static_configs:
-      - targets: ['kafka:9092']
-
-  - job_name: 'hbase'
-    static_configs:
-      - targets: ['hbase:16010']
-
-  - job_name: 'spark-master'
-    static_configs:
-      - targets: ['spark-master:8080']
+      - targets: ['localhost:9090']

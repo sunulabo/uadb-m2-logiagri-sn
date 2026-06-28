@@ -2,24 +2,26 @@
 # kafka_to_postgres.py — Script d'ingestion Kafka vers PostgreSQL pour Grafana
 
 import json
+import os
 import psycopg2
 from kafka import KafkaConsumer
 import time
 
 # --- Configuration ---
-KAFKA_BROKER = 'localhost:29092'
-TOPIC = 'logi_alertes'
+KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'localhost:29092')
+TOPIC = os.getenv('KAFKA_TOPIC', 'logi_alertes')
 
-DB_HOST = 'localhost'
-DB_NAME = 'logiagri_db'
-DB_USER = 'logiagri'
-DB_PASS = 'logiagri2025'
+DB_HOST = os.getenv('POSTGRES_HOST', 'localhost')
+DB_PORT = int(os.getenv('POSTGRES_PORT', '5433'))
+DB_NAME = os.getenv('POSTGRES_DB', 'logiagri_db')
+DB_USER = os.getenv('POSTGRES_USER', 'logiagri')
+DB_PASS = os.getenv('POSTGRES_PASSWORD', 'logiagri2025')
 
 def init_db():
     # Boucle de reconnexion au cas où Postgres est encore en cours de démarrage
     while True:
         try:
-            conn = psycopg2.connect(host=DB_HOST, port=5433, database=DB_NAME, user=DB_USER, password=DB_PASS)
+            conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASS)
             cursor = conn.cursor()
             
             # Création de la table pour stocker les KPIs de Grafana
