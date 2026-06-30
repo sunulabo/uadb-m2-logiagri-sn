@@ -1,0 +1,54 @@
+# schema.py — Contrats Pandera pour Logi-Agri SN
+import pandera as pa
+from pandera.typing import Series
+import pandas as pd
+import logging
+
+logger = logging.getLogger('LogiAgriSchema')
+
+class TransportLogisticsSchema(pa.SchemaModel):
+    """Schéma pour les données de transport"""
+    voyage_id: Series[str] = pa.Field(unique=True)
+    produit: Series[str] = pa.Field(isin=['ARACHIDE','MANGUE','RIZ','TOMATE'])
+    poids_kg: Series[float] = pa.Field(gt=0, le=30000)
+    temp_moyenne_c: Series[float] = pa.Field(ge=2.0, le=45.0)
+    delai_prevu_h: Series[int] = pa.Field(ge=1, le=168)
+    date_depart: Series[str] = pa.Field(str_matches=r'^\d{4}-\d{2}-\d{2}$')
+    zone_origine: Series[str] = pa.Field(isin=['CASAMANCE','BASSIN_ARACHIDIER', 'SINE_SALOUM','NIAYES'])
+    zone_dest: Series[str] = pa.Field(isin=['DAKAR','EXPORT','THIES','KAOLACK'])
+    distance_km: Series[float] = pa.Field(gt=0, le=800)
+    pct_perte_reel: Series[float] = pa.Field(ge=0.0, le=1.0)
+
+    class Config:
+        strict = True
+        coerce = True
+
+
+class CapteurIoTSchema(pa.SchemaModel):
+    """Schéma pour les données IoT des capteurs"""
+    capteur_id: Series[str] = pa.Field()
+    voyage_id: Series[str] = pa.Field()
+    timestamp_utc: Series[str] = pa.Field(str_matches=r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$')
+    temperature_c: Series[float] = pa.Field(ge=-5.0, le=50.0)
+    latitude: Series[float] = pa.Field(ge=12.0, le=15.5)
+    longitude: Series[float] = pa.Field(ge=-17.5, le=-11.5)
+
+    class Config:
+        strict = True
+        coerce = True
+
+
+def validate_and_filter(df, schema_class):
+    """Valide un DataFrame et retourne seulement les lignes valides"""
+    try:
+        return schema_class.validate(df, lazy=True)
+    except pa.errors.SchemaErrors as exc:
+        err = exc.failure_cases
+        logger.warning(f'[{schema_class.__name__}] {len(err)} erreur(s) rejetées')
+        valid_idx = df.index.difference(err['index'].dropna().astype(int))
+        return df.loc[valid_idx]
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    print('✓ Schémas Pandera chargés avec succès')

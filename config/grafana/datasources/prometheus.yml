@@ -1,0 +1,26 @@
+apiVersion: 1
+
+datasources:
+  - name: LogiAgri PostgreSQL
+    uid: postgres-logiagri
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: logiagri_db
+    user: logiagri
+    secureJsonData:
+      password: logiagri2025
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: true
+    editable: true
+
+  - name: Prometheus
+    uid: prometheus-logiagri
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: true

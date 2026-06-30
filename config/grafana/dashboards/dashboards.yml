@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'Logi-Agri dashboards'
+    orgId: 1
+    folder: 'Logi-Agri SN'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
